@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8" />
+    <title>Väder – dag & timme</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #020617;
+            --card: #1e293b;
+            --accent: #38bdf8;
+            --text: #e5e7eb;
+        }
+
+        body {
+            margin: 0;
+            font-family: system-ui, sans-serif;
+            background: linear-gradient(160deg, #020617, #0f172a);
+            color: var(--text);
+        }
+
+        h1 {
+            text-align: center;
+            padding: 2rem 1rem 1rem;
+            color: var(--accent);
+        }
+
+        .days {
+            max-width: 1100px;
+            margin: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .day-card {
+            background: var(--card);
+            border-radius: 18px;
+            padding: 1rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,.4);
+        }
+
+        .day-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .day-header h2 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .day-header span {
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+
+        .hourly {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .hour {
+            background: #0f172a;
+            border-radius: 14px;
+            padding: 0.75rem;
+            text-align: center;
+        }
+
+        .time {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        .temp {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .desc {
+            font-size: 0.75rem;
+            opacity: 0.85;
+        }
+
+        .wind {
+            font-size: 0.7rem;
+            opacity: 0.85;
+            margin-top: 0.25rem;
+        }
+
+        /* ====== IKONER + ANIMATIONER ====== */
+
+        .icon {
+            font-size: 1.6rem;
+            margin: 0.3rem 0;
+        }
+
+        .sun { animation: spin 8s linear infinite; }
+        .moon { animation: pulse 3s ease-in-out infinite; }
+        .cloud { animation: float 4s ease-in-out infinite; }
+        .rain { animation: drop 1.5s linear infinite; }
+        .snow { animation: float 3s ease-in-out infinite; }
+        .sleet { animation: float 3s ease-in-out infinite; }
+        .storm { animation: pulse 1.2s infinite; }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%,100% { opacity: .6 }
+            50% { opacity: 1 }
+        }
+
+        @keyframes float {
+            0%,100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+
+        @keyframes drop {
+            0% { transform: translateY(0); opacity: 1 }
+            100% { transform: translateY(6px); opacity: .4 }
+        }
+    </style>
+</head>
+
+<body>
+<h1>🌦️ Väderprognos – Karlskrona</h1>
+<div id="days" class="days"></div>
+
+<script>
+    const lat = 56.161;
+    const lon = 15.587;
+    const container = document.getElementById("days");
+
+    const url = `https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/${lon}/lat/${lat}/data.json`;
+
+    // ====== KORREKT Wsymb2-TOLKNING ======
+    const descriptions = {
+        1: "Klart",
+        2: "Nästan klart",
+        3: "Växlande molnighet",
+        4: "Halvklart",
+        5: "Molnigt",
+        6: "Mulet",
+        7: "Dimma",
+        8: "Lätta regnskurar",
+        9: "Måttliga regnskurar",
+        10: "Kraftiga regnskurar",
+        11: "Åskväder",
+        12: "Lätta byar med blötsnö",
+        13: "Måttliga byar med blötsnö",
+        14: "Kraftiga byar med blötsnö",
+        15: "Lätta snöbyar",
+        16: "Måttliga snöbyar",
+        17: "Kraftiga snöbyar",
+        18: "Lätt regn",
+        19: "Måttligt regn",
+        20: "Kraftigt regn",
+        21: "Åska",
+        22: "Lätt blötsnö",
+        23: "Måttlig blötsnö",
+        24: "Kraftig blötsnö",
+        25: "Lätt snöfall",
+        26: "Måttligt snöfall",
+        27: "Kraftigt snöfall"
+    };
+
+    function isDay(time) {
+        const hour = new Date(time).getHours();
+        return hour >= 6 && hour < 18;
+    }
+
+    function windDirection(deg) {
+        const dirs = ["N", "NO", "O", "SO", "S", "SV", "V", "NV"];
+        return dirs[Math.round(deg / 45) % 8];
+    }
+
+    function windStrength(ms) {
+        if (ms < 1) return "Lugnt";
+        if (ms < 4) return "Svag vind";
+        if (ms < 8) return "Måttlig vind";
+        if (ms < 14) return "Frisk vind";
+        if (ms < 21) return "Hård vind";
+        return "Storm";
+    }
+
+    function icon(code, isDay) {
+        if (code === 1 || code === 2) return isDay ? "☀️ sun" : "🌙 moon";
+        if (code === 3 || code === 4) return isDay ? "🌤️ cloud" : "☁️ cloud";
+        if (code >= 5 && code <= 7) return code === 7 ? "🌫️ cloud" : "☁️ cloud";
+        if (code >= 8 && code <= 10) return "🌦️ rain";
+        if (code === 11 || code === 21) return "⛈️ storm";
+        if (code >= 12 && code <= 14) return "🌨️ sleet";
+        if (code >= 15 && code <= 17) return "🌨️ snow";
+        if (code >= 18 && code <= 20) return "🌧️ rain";
+        if (code >= 22 && code <= 24) return "🌨️ sleet";
+        if (code >= 25 && code <= 27) return "❄️ snow";
+        return "❓ unknown";
+    }
+
+    axios.get(url).then(res => {
+        const days = {};
+
+        res.data.timeSeries.forEach(h => {
+            const date = h.validTime.split("T")[0];
+            if (!days[date]) days[date] = [];
+            days[date].push(h);
+        });
+
+        Object.keys(days).slice(0, 5).forEach(date => {
+            const dayCard = document.createElement("div");
+            dayCard.className = "day-card";
+
+            const readableDate = new Date(date).toLocaleDateString("sv-SE", {
+                weekday: "long",
+                day: "numeric",
+                month: "long"
+            });
+
+            dayCard.innerHTML = `
+                <div class="day-header">
+                    <h2>${readableDate}</h2>
+                    <span>${days[date].length} timmar</span>
+                </div>
+                <div class="hourly"></div>
+            `;
+
+            const hourly = dayCard.querySelector(".hourly");
+
+            days[date].forEach(h => {
+                const time = new Date(h.validTime).toLocaleTimeString("sv-SE", {
+                    hour: "2-digit",
+                    minute: "2-digit"
+                });
+
+                const temp = h.parameters.find(p => p.name === "t").values[0];
+                const symb = h.parameters.find(p => p.name === "Wsymb2").values[0];
+                const windSpeed = h.parameters.find(p => p.name === "ws").values[0];
+                const windDeg = h.parameters.find(p => p.name === "wd").values[0];
+                const day = isDay(h.validTime);
+
+                const [emoji, cssClass] = icon(symb, day).split(" ");
+
+                const hourEl = document.createElement("div");
+                hourEl.className = "hour";
+                hourEl.innerHTML = `
+                    <div class="time">${time}</div>
+                    <div class="icon ${cssClass}">${emoji}</div>
+                    <div class="temp">${temp}°C</div>
+                    <div class="desc">${descriptions[symb]}</div>
+                    <div class="wind">
+                        🌬️ ${windSpeed} m/s ${windDirection(windDeg)}
+                        <br>
+                        <small>${windStrength(windSpeed)}</small>
+                    </div>
+                `;
+
+                hourly.appendChild(hourEl);
+            });
+
+            container.appendChild(dayCard);
+        });
+    });
+</script>
+</body>
+</html>
