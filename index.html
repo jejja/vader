@@ -42,24 +42,26 @@
       .topbar {
         max-width: 1100px;
         margin: 0 auto;
-        padding: 0 1rem 1rem;
+        padding: 0 1rem 0.5rem;
         display: flex;
         justify-content: center;
-        gap: 0.75rem;
-        flex-wrap: wrap;
       }
 
-      button {
-        border: 1px solid rgba(255,255,255,.18);
-        background: rgba(255,255,255,.06);
+      .icon-btn {
+        width: 44px;
+        height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: rgba(255, 255, 255, 0.06);
         color: var(--text);
-        border-radius: 12px;
-        padding: 0.6rem 0.9rem;
+        border-radius: 14px;
         cursor: pointer;
+        user-select: none;
       }
-
-      button:hover { filter: brightness(1.08); }
-      button:disabled { opacity: 0.6; cursor: not-allowed; }
+      .icon-btn:hover { filter: brightness(1.08); }
+      .icon-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
       .status {
         max-width: 1100px;
@@ -68,7 +70,6 @@
         text-align: center;
         opacity: 0.9;
       }
-
       .status small { opacity: 0.85; }
 
       .days {
@@ -147,9 +148,10 @@
       footer {
         max-width: 1100px;
         margin: 0 auto;
-        padding: 1rem 1rem 2rem;
-        opacity: 0.85;
-        font-size: 0.9rem;
+        padding: 0 1rem 2rem;
+        opacity: 0.8;
+        font-size: 0.85rem;
+        text-align: center;
       }
 
       footer a { color: inherit; }
@@ -178,32 +180,21 @@
   <body>
     <header>
       <h1>🌦️ Väderprognos – Karlskrona</h1>
-      <div class="sub">Timprognos (5 dagar) från SMHIs öppna data.</div>
+      <div class="sub">Timprognos (5 dagar).</div>
     </header>
 
     <div class="topbar">
-      <button id="btnRefresh" type="button">Uppdatera</button>
-      <button id="btnForce" type="button" title="Ignorerar cache och hämtar ny data från SMHI">
-        Tvinga uppdatering
+      <button id="btnRefresh" class="icon-btn" type="button" aria-label="Uppdatera" title="Uppdatera">
+        ↻
       </button>
     </div>
 
     <div id="status" class="status" aria-live="polite"></div>
     <div id="days" class="days"></div>
 
-    <footer class="day-card">
-      <strong>Källa & licens</strong><br />
-      Källa: SMHI (Sveriges meteorologiska och hydrologiska institut), öppna data.
-      Licens: Creative Commons Erkännande 4.0 (CC BY 4.0).<br />
-      Denna webbsida är en <em>bearbetning</em> av datan (urval/visualisering).
-      Läs villkor:
-      <a href="https://www.smhi.se/data/om-smhis-data/villkor-for-anvandning" target="_blank" rel="noopener noreferrer">
-        SMHIs villkor för användning
-      </a>.
+    <footer>
+      Källa: SMHI (CC BY 4.0). <a href="https://www.smhi.se/data/om-smhis-data/villkor-for-anvandning" target="_blank" rel="noopener noreferrer">Villkor</a>.
       
-      <div style="margin-top:0.5rem;">
-        <small>För att undvika onödig belastning cacheas svaret lokalt i webbläsaren en stund innan ny hämtning görs.</small>
-      </div>
     </footer>
 
     <script>
@@ -214,13 +205,12 @@
       const LAT = 56.161;
       const LON = 15.587;
 
-      // Rimlig cachning för att undvika onödiga anrop
+      // Cachning för att minska onödiga anrop (du kan justera)
       const CACHE_TTL_MS = 15 * 60 * 1000;
 
       const container = document.getElementById("days");
       const statusEl = document.getElementById("status");
       const btnRefresh = document.getElementById("btnRefresh");
-      const btnForce = document.getElementById("btnForce");
 
       const SMHI_URL =
         `https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/${LON}/lat/${LAT}/data.json`;
@@ -258,33 +248,21 @@
         27: "Kraftigt snöfall"
       };
 
-      function fmtLocalDateTime(msOrIso) {
-        const d = typeof msOrIso === "number" ? new Date(msOrIso) : new Date(msOrIso);
-        return new Intl.DateTimeFormat("sv-SE", { dateStyle: "medium", timeStyle: "short" }).format(d);
+      function fmtLocalDateTime(ms) {
+        return new Intl.DateTimeFormat("sv-SE", { dateStyle: "medium", timeStyle: "short" }).format(new Date(ms));
       }
 
-      function setStatus({ message, source, fetchedAt, note } = {}) {
+      function setStatus({ message, fetchedAt } = {}) {
         const parts = [];
         if (message) parts.push(message);
-
-        if (fetchedAt) {
-          parts.push(`<small>Senast uppdaterad: <strong>${fmtLocalDateTime(fetchedAt)}</strong></small>`);
-        }
-
-        if (source) {
-          parts.push(`<small>Källa för denna visning: <strong>${source}</strong></small>`);
-        }
-
-        if (note) {
-          parts.push(`<small>${note}</small>`);
-        }
-
+        if (fetchedAt) parts.push(`<small>Senast uppdaterad: <strong>${fmtLocalDateTime(fetchedAt)}</strong></small>`);
+        parts.push(`<small>Plats: <strong>${PLACE}</strong></small>`);
         statusEl.innerHTML = parts.join("<br>");
       }
 
       function setLoading(isLoading) {
         btnRefresh.disabled = isLoading;
-        btnForce.disabled = isLoading;
+        btnRefresh.textContent = isLoading ? "⟳" : "↻";
       }
 
       function isDay(isoTime) {
@@ -349,23 +327,17 @@
         }
       }
 
-      function clearCache() {
-        try { localStorage.removeItem(CACHE_KEY); } catch { /* ignore */ }
-      }
-
-      async function fetchForecast({ force = false } = {}) {
-        if (!force) {
-          const cached = loadCache();
-          if (cached) {
-            return { data: cached.data, fetchedAt: cached.ts, source: "Cache" };
-          }
+      async function fetchForecast() {
+        const cached = loadCache();
+        if (cached) {
+          return { data: cached.data, fetchedAt: cached.ts, fromCache: true };
         }
 
         const res = await fetch(SMHI_URL, { headers: { "Accept": "application/json" } });
         if (!res.ok) throw new Error(`SMHI svarade ${res.status} ${res.statusText}`);
         const data = await res.json();
         const ts = saveCache(data);
-        return { data, fetchedAt: ts, source: "SMHI (nät)" };
+        return { data, fetchedAt: ts, fromCache: false };
       }
 
       function render(data) {
@@ -408,12 +380,8 @@
 
             const temp = param(h, "t", "—");
             const symb = param(h, "Wsymb2", null);
-            const windSpeedRaw = param(h, "ws", NaN);
-            const windDegRaw = param(h, "wd", 0);
-
-            const windSpeed = Number(windSpeedRaw);
-            const windDeg = Number(windDegRaw);
-
+            const windSpeed = Number(param(h, "ws", NaN));
+            const windDeg = Number(param(h, "wd", 0));
             const day = isDay(h.validTime);
 
             const [emoji, cssClass] = icon(symb ?? 0, day).split(" ");
@@ -440,42 +408,28 @@
         }
       }
 
-      async function refresh({ force = false } = {}) {
+      async function refresh() {
         setLoading(true);
         try {
-          setStatus({
-            message: force ? "⏳ Tvingad uppdatering från SMHI…" : "⏳ Uppdaterar…",
-            note: `<small>Plats: <strong>${PLACE}</strong></small>`
-          });
+          setStatus({ message: "⏳ Uppdaterar…" });
 
-          const { data, fetchedAt, source } = await fetchForecast({ force });
+          const { data, fetchedAt, fromCache } = await fetchForecast();
           render(data);
 
           setStatus({
-            message: "✅ Klart.",
-            source,
-            fetchedAt,
-            note: `<small>Plats: <strong>${PLACE}</strong></small>`
+            message: fromCache ? "✅ Klart (cache)." : "✅ Klart.",
+            fetchedAt
           });
         } catch (err) {
           console.error(err);
-          setStatus({
-            message: `❌ Kunde inte hämta prognos.`,
-            note: `<small>${err?.message ? err.message : ""}</small>`
-          });
+          setStatus({ message: `❌ Kunde inte hämta prognos. <small>${err?.message ? err.message : ""}</small>` });
         } finally {
           setLoading(false);
         }
       }
 
-      btnRefresh.addEventListener("click", () => refresh({ force: false }));
-      btnForce.addEventListener("click", () => {
-        clearCache(); // valfritt men tydligt för "tvinga"
-        refresh({ force: true });
-      });
-
-      // Init
-      refresh({ force: false });
+      btnRefresh.addEventListener("click", refresh);
+      refresh();
     </script>
   </body>
 </html>
