@@ -1,435 +1,346 @@
 <!doctype html>
 <html lang="sv">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Väder – dag & timme</title>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Väder – dag & timme</title>
 
-    <style>
-      :root {
-        --bg: #020617;
-        --card: #1e293b;
-        --accent: #38bdf8;
-        --text: #e5e7eb;
-      }
+  <style>
+    :root {
+      --bg: #020617;
+      --card: #1e293b;
+      --accent: #38bdf8;
+      --text: #e5e7eb;
+    }
 
-      body {
-        margin: 0;
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-        background: linear-gradient(160deg, #020617, #0f172a);
-        color: var(--text);
-      }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: linear-gradient(160deg, #020617, #0f172a);
+      color: var(--text);
+    }
 
-      header {
-        max-width: 1100px;
-        margin: 0 auto;
-        padding: 2rem 1rem 1rem;
-      }
+    header {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem 1rem 1rem;
+      text-align: center;
+    }
 
-      h1 {
-        margin: 0;
-        text-align: center;
-        color: var(--accent);
-      }
+    h1 {
+      margin: 0;
+      color: var(--accent);
+    }
 
-      .sub {
-        text-align: center;
-        opacity: 0.8;
-        margin-top: 0.5rem;
-        font-size: 0.95rem;
-      }
+    .sub {
+      opacity: 0.8;
+      margin-top: 0.4rem;
+      font-size: 0.95rem;
+    }
 
-      .topbar {
-        max-width: 1100px;
-        margin: 0 auto;
-        padding: 0 1rem 0.5rem;
-        display: flex;
-        justify-content: center;
-      }
+    .topbar {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 1rem 0.5rem;
+      display: flex;
+      justify-content: center;
+    }
 
-      .icon-btn {
-        width: 44px;
-        height: 44px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        background: rgba(255, 255, 255, 0.06);
-        color: var(--text);
-        border-radius: 14px;
-        cursor: pointer;
-        user-select: none;
-      }
-      .icon-btn:hover { filter: brightness(1.08); }
-      .icon-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .icon-btn {
+      width: 44px;
+      height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      border-radius: 14px;
+      cursor: pointer;
+      font-size: 1.2rem;
+    }
 
-      .status {
-        max-width: 1100px;
-        margin: 0 auto;
-        padding: 0 1rem 1rem;
-        text-align: center;
-        opacity: 0.9;
-      }
-      .status small { opacity: 0.85; }
+    .icon-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
 
-      .days {
-        max-width: 1100px;
-        margin: auto;
-        padding: 1rem;
-        display: flex;
-        flex-direction: column;
-        gap: 2rem;
-      }
+    .status {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 1rem 1rem;
+      text-align: center;
+      opacity: 0.9;
+      font-size: 0.9rem;
+    }
 
-      .day-card {
-        background: var(--card);
-        border-radius: 18px;
-        padding: 1rem;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-      }
+    .days {
+      max-width: 1100px;
+      margin: auto;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
 
-      .day-header {
-        display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        gap: 1rem;
-        margin-bottom: 1rem;
-      }
+    .day-card {
+      background: var(--card);
+      border-radius: 18px;
+      padding: 1rem;
+      box-shadow: 0 20px 40px rgba(0,0,0,.4);
+    }
 
-      .day-header h2 {
-        margin: 0;
-        font-size: 1.2rem;
-        text-transform: capitalize;
-      }
+    .day-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      gap: 1rem;
+    }
 
-      .day-header span {
-        opacity: 0.8;
-        font-size: 0.9rem;
-        white-space: nowrap;
-      }
+    .day-header h2 {
+      margin: 0;
+      font-size: 1.2rem;
+      text-transform: capitalize;
+    }
 
-      .hourly {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-        gap: 0.75rem;
-      }
+    .day-header span {
+      opacity: 0.8;
+      font-size: 0.9rem;
+    }
 
-      .hour {
-        background: #0f172a;
-        border-radius: 14px;
-        padding: 0.75rem;
-        text-align: center;
-      }
+    .hourly {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 0.75rem;
+    }
 
-      .time {
-        font-size: 0.8rem;
-        opacity: 0.7;
-      }
+    .hour {
+      background: #0f172a;
+      border-radius: 14px;
+      padding: 0.75rem;
+      text-align: center;
+    }
 
-      .temp {
-        font-size: 1.3rem;
-        font-weight: 800;
-        color: var(--accent);
-      }
+    .time {
+      font-size: 0.8rem;
+      opacity: 0.7;
+    }
 
-      .desc {
-        font-size: 0.75rem;
-        opacity: 0.9;
-        min-height: 2.1em;
-      }
+    .icon {
+      font-size: 1.6rem;
+      margin: 0.3rem 0;
+    }
 
-      .wind {
-        font-size: 0.72rem;
-        opacity: 0.9;
-        margin-top: 0.35rem;
-        line-height: 1.3;
-      }
+    .temp {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
 
-      footer {
-        max-width: 1100px;
-        margin: 0 auto;
-        padding: 0 1rem 2rem;
-        opacity: 0.8;
-        font-size: 0.85rem;
-        text-align: center;
-      }
+    .desc {
+      font-size: 0.75rem;
+      opacity: 0.9;
+      min-height: 2em;
+    }
 
-      footer a { color: inherit; }
+    .wind {
+      font-size: 0.72rem;
+      opacity: 0.9;
+      margin-top: 0.3rem;
+    }
 
-      /* ====== IKONER + ANIMATIONER ====== */
-      .icon {
-        font-size: 1.6rem;
-        margin: 0.3rem 0;
-      }
+    footer {
+      text-align: center;
+      font-size: 0.8rem;
+      opacity: 0.8;
+      padding: 0 1rem 2rem;
+    }
 
-      .sun { animation: spin 8s linear infinite; }
-      .moon { animation: pulse 3s ease-in-out infinite; }
-      .cloud { animation: float 4s ease-in-out infinite; }
-      .rain { animation: drop 1.5s linear infinite; }
-      .snow { animation: float 3s ease-in-out infinite; }
-      .sleet { animation: float 3s ease-in-out infinite; }
-      .storm { animation: pulse 1.2s infinite; }
+    footer a { color: inherit; }
 
-      @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-      @keyframes pulse { 0%,100% { opacity: .6 } 50% { opacity: 1 } }
-      @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
-      @keyframes drop { 0% { transform: translateY(0); opacity: 1 } 100% { transform: translateY(6px); opacity: .4 } }
-    </style>
-  </head>
+    /* animationer */
+    .sun { animation: spin 8s linear infinite; }
+    .moon { animation: pulse 3s ease-in-out infinite; }
+    .cloud { animation: float 4s ease-in-out infinite; }
+    .rain { animation: drop 1.5s linear infinite; }
+    .snow, .sleet { animation: float 3s ease-in-out infinite; }
+    .storm { animation: pulse 1.2s infinite; }
 
-  <body>
-    <header>
-      <h1>🌦️ Väderprognos – Karlskrona</h1>
-      <div class="sub">Timprognos (5 dagar).</div>
-    </header>
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse { 0%,100%{opacity:.6} 50%{opacity:1} }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
+    @keyframes drop { to{transform:translateY(6px);opacity:.4} }
+  </style>
+</head>
 
-    <div class="topbar">
-      <button id="btnRefresh" class="icon-btn" type="button" aria-label="Uppdatera" title="Uppdatera">
-        ↻
-      </button>
-    </div>
+<body>
+  <header>
+    <h1>🌦️ Väderprognos – Karlskrona</h1>
+    <div class="sub">Timprognos (5 dagar)</div>
+  </header>
 
-    <div id="status" class="status" aria-live="polite"></div>
-    <div id="days" class="days"></div>
+  <div class="topbar">
+    <button id="btnRefresh" class="icon-btn" title="Uppdatera">↻</button>
+  </div>
 
-    <footer>
-      Källa: SMHI (CC BY 4.0). <a href="https://www.smhi.se/data/om-smhis-data/villkor-for-anvandning" target="_blank" rel="noopener noreferrer">Villkor</a>.
-      
-    </footer>
+  <div id="status" class="status"></div>
+  <div id="days" class="days"></div>
 
-    <script>
-      // =========================
-      // Inställningar
-      // =========================
-      const PLACE = "Karlskrona";
-      const LAT = 56.161;
-      const LON = 15.587;
+  <footer>
+    Källa: SMHI (CC BY 4.0)
+    <a href="https://www.smhi.se/data/om-smhis-data/villkor-for-anvandning" target="_blank" rel="noopener">Villkor</a>
+  </footer>
 
-      // Cachning för att minska onödiga anrop (du kan justera)
-      const CACHE_TTL_MS = 15 * 60 * 1000;
+<script>
+  const PLACE = "Karlskrona";
+  const LAT = 56.161;
+  const LON = 15.587;
 
-      const container = document.getElementById("days");
-      const statusEl = document.getElementById("status");
-      const btnRefresh = document.getElementById("btnRefresh");
+  const CACHE_TTL_MS = 15 * 60 * 1000;
+  const CACHE_KEY = `smhi:pmp3g:v2:${LON}:${LAT}`;
+  const URL = `https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/${LON}/lat/${LAT}/data.json`;
 
-      const SMHI_URL =
-        `https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/${LON}/lat/${LAT}/data.json`;
+  const container = document.getElementById("days");
+  const statusEl = document.getElementById("status");
+  const btnRefresh = document.getElementById("btnRefresh");
 
-      const CACHE_KEY = `smhi:pmp3g:v2:${LON}:${LAT}`;
+  const dayKeyFmt = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Europe/Stockholm",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  });
 
-      // ====== Wsymb2-beskrivningar ======
-      const descriptions = {
-        1: "Klart",
-        2: "Nästan klart",
-        3: "Växlande molnighet",
-        4: "Halvklart",
-        5: "Molnigt",
-        6: "Mulet",
-        7: "Dimma",
-        8: "Lätta regnskurar",
-        9: "Måttliga regnskurar",
-        10: "Kraftiga regnskurar",
-        11: "Åskväder",
-        12: "Lätta byar med blötsnö",
-        13: "Måttliga byar med blötsnö",
-        14: "Kraftiga byar med blötsnö",
-        15: "Lätta snöbyar",
-        16: "Måttliga snöbyar",
-        17: "Kraftiga snöbyar",
-        18: "Lätt regn",
-        19: "Måttligt regn",
-        20: "Kraftigt regn",
-        21: "Åska",
-        22: "Lätt blötsnö",
-        23: "Måttlig blötsnö",
-        24: "Kraftig blötsnö",
-        25: "Lätt snöfall",
-        26: "Måttligt snöfall",
-        27: "Kraftigt snöfall"
-      };
+  function localDateKey(iso) {
+    return dayKeyFmt.format(new Date(iso));
+  }
 
-      function fmtLocalDateTime(ms) {
-        return new Intl.DateTimeFormat("sv-SE", { dateStyle: "medium", timeStyle: "short" }).format(new Date(ms));
-      }
+  const descriptions = {
+    1:"Klart",2:"Nästan klart",3:"Växlande molnighet",4:"Halvklart",
+    5:"Molnigt",6:"Mulet",7:"Dimma",
+    8:"Lätta regnskurar",9:"Måttliga regnskurar",10:"Kraftiga regnskurar",
+    11:"Åska",
+    12:"Lätt blötsnö",13:"Måttlig blötsnö",14:"Kraftig blötsnö",
+    15:"Lätt snö",16:"Måttlig snö",17:"Kraftig snö",
+    18:"Lätt regn",19:"Måttligt regn",20:"Kraftigt regn",
+    21:"Åska",
+    22:"Lätt blötsnö",23:"Måttlig blötsnö",24:"Kraftig blötsnö",
+    25:"Lätt snöfall",26:"Måttligt snöfall",27:"Kraftigt snöfall"
+  };
 
-      function setStatus({ message, fetchedAt } = {}) {
-        const parts = [];
-        if (message) parts.push(message);
-        if (fetchedAt) parts.push(`<small>Senast uppdaterad: <strong>${fmtLocalDateTime(fetchedAt)}</strong></small>`);
-        parts.push(`<small>Plats: <strong>${PLACE}</strong></small>`);
-        statusEl.innerHTML = parts.join("<br>");
-      }
+  function icon(code, day) {
+    if (code <= 2) return day ? "☀️ sun" : "🌙 moon";
+    if (code <= 4) return "🌤️ cloud";
+    if (code <= 7) return "☁️ cloud";
+    if (code <= 10) return "🌦️ rain";
+    if (code === 11 || code === 21) return "⛈️ storm";
+    if (code <= 14) return "🌨️ sleet";
+    if (code <= 17) return "❄️ snow";
+    if (code <= 20) return "🌧️ rain";
+    return "❓ cloud";
+  }
 
-      function setLoading(isLoading) {
-        btnRefresh.disabled = isLoading;
-        btnRefresh.textContent = isLoading ? "⟳" : "↻";
-      }
+  function param(h, name, fallback=null) {
+    const p = h.parameters.find(x => x.name === name);
+    return p ? p.values[0] : fallback;
+  }
 
-      function isDay(isoTime) {
-        const hour = new Date(isoTime).getHours();
-        return hour >= 6 && hour < 18;
-      }
+  function loadCache() {
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      if (Date.now() - obj.ts > CACHE_TTL_MS) return null;
+      return obj;
+    } catch { return null; }
+  }
 
-      function windDirection(deg) {
-        const dirs = ["N", "NO", "O", "SO", "S", "SV", "V", "NV"];
-        return dirs[Math.round(deg / 45) % 8];
-      }
+  function saveCache(data) {
+    const obj = { ts: Date.now(), data };
+    localStorage.setItem(CACHE_KEY, JSON.stringify(obj));
+    return obj.ts;
+  }
 
-      function windStrength(ms) {
-        if (!Number.isFinite(ms)) return "—";
-        if (ms < 1) return "Lugnt";
-        if (ms < 4) return "Svag vind";
-        if (ms < 8) return "Måttlig vind";
-        if (ms < 14) return "Frisk vind";
-        if (ms < 21) return "Hård vind";
-        return "Storm";
-      }
+  async function fetchForecast(force) {
+    if (!force) {
+      const cached = loadCache();
+      if (cached) return { ...cached, fromCache:true };
+    }
+    const res = await fetch(URL);
+    const data = await res.json();
+    return { data, ts: saveCache(data), fromCache:false };
+  }
 
-      function icon(code, day) {
-        if (code === 1 || code === 2) return day ? "☀️ sun" : "🌙 moon";
-        if (code === 3 || code === 4) return day ? "🌤️ cloud" : "☁️ cloud";
-        if (code >= 5 && code <= 7) return code === 7 ? "🌫️ cloud" : "☁️ cloud";
-        if (code >= 8 && code <= 10) return "🌦️ rain";
-        if (code === 11 || code === 21) return "⛈️ storm";
-        if (code >= 12 && code <= 14) return "🌨️ sleet";
-        if (code >= 15 && code <= 17) return "🌨️ snow";
-        if (code >= 18 && code <= 20) return "🌧️ rain";
-        if (code >= 22 && code <= 24) return "🌨️ sleet";
-        if (code >= 25 && code <= 27) return "❄️ snow";
-        return "❓ cloud";
-      }
+  function render(data) {
+    container.innerHTML = "";
+    const days = {};
 
-      function param(series, name, fallback = null) {
-        const p = series.parameters?.find(x => x.name === name);
-        return (p && Array.isArray(p.values) && p.values.length) ? p.values[0] : fallback;
-      }
+    data.timeSeries.forEach(h => {
+      const key = localDateKey(h.validTime);
+      (days[key] ||= []).push(h);
+    });
 
-      function loadCache() {
-        try {
-          const raw = localStorage.getItem(CACHE_KEY);
-          if (!raw) return null;
-          const obj = JSON.parse(raw);
-          if (!obj?.ts || !obj?.data) return null;
-          if (Date.now() - obj.ts > CACHE_TTL_MS) return null;
-          return obj; // { ts, data }
-        } catch {
-          return null;
-        }
-      }
+    Object.keys(days).slice(0,5).forEach(key => {
+      const card = document.createElement("div");
+      card.className = "day-card";
 
-      function saveCache(data) {
-        try {
-          const obj = { ts: Date.now(), data };
-          localStorage.setItem(CACHE_KEY, JSON.stringify(obj));
-          return obj.ts;
-        } catch {
-          return Date.now();
-        }
-      }
+      const title = new Date(key+"T12:00").toLocaleDateString("sv-SE", {
+        weekday:"long", day:"numeric", month:"long"
+      });
 
-      async function fetchForecast() {
-        const cached = loadCache();
-        if (cached) {
-          return { data: cached.data, fetchedAt: cached.ts, fromCache: true };
-        }
+      card.innerHTML = `
+        <div class="day-header">
+          <h2>${title}</h2>
+          <span>${days[key].length} timmar</span>
+        </div>
+        <div class="hourly"></div>
+      `;
 
-        const res = await fetch(SMHI_URL, { headers: { "Accept": "application/json" } });
-        if (!res.ok) throw new Error(`SMHI svarade ${res.status} ${res.statusText}`);
-        const data = await res.json();
-        const ts = saveCache(data);
-        return { data, fetchedAt: ts, fromCache: false };
-      }
+      const hourly = card.querySelector(".hourly");
 
-      function render(data) {
-        container.innerHTML = "";
+      days[key].forEach(h => {
+        const t = param(h,"t","—");
+        const symb = param(h,"Wsymb2",0);
+        const ws = param(h,"ws","—");
+        const wd = param(h,"wd",0);
+        const time = new Date(h.validTime).toLocaleTimeString("sv-SE",{hour:"2-digit",minute:"2-digit"});
+        const day = new Date(h.validTime).getHours()>=6;
 
-        const days = {};
-        for (const h of data.timeSeries || []) {
-          const date = (h.validTime || "").split("T")[0];
-          if (!date) continue;
-          (days[date] ||= []).push(h);
-        }
+        const [emoji,cls] = icon(symb,day).split(" ");
+        const el = document.createElement("div");
+        el.className="hour";
+        el.innerHTML = `
+          <div class="time">${time}</div>
+          <div class="icon ${cls}">${emoji}</div>
+          <div class="temp">${t}°C</div>
+          <div class="desc">${descriptions[symb]||""}</div>
+          <div class="wind">🌬️ ${ws} m/s</div>
+        `;
+        hourly.appendChild(el);
+      });
 
-        const dates = Object.keys(days).slice(0, 5);
+      container.appendChild(card);
+    });
+  }
 
-        for (const date of dates) {
-          const dayCard = document.createElement("div");
-          dayCard.className = "day-card";
+  async function refresh(force=false) {
+    btnRefresh.disabled = true;
+    btnRefresh.textContent = "⟳";
+    statusEl.textContent = "Uppdaterar…";
 
-          const readableDate = new Date(date).toLocaleDateString("sv-SE", {
-            weekday: "long",
-            day: "numeric",
-            month: "long"
-          });
+    const { data, ts } = await fetchForecast(force);
+    render(data);
 
-          dayCard.innerHTML = `
-            <div class="day-header">
-              <h2>${readableDate}</h2>
-              <span>${days[date].length} timmar</span>
-            </div>
-            <div class="hourly"></div>
-          `;
+    statusEl.textContent =
+      "Senast uppdaterad: " +
+      new Intl.DateTimeFormat("sv-SE",{dateStyle:"medium",timeStyle:"short"}).format(new Date(ts));
 
-          const hourly = dayCard.querySelector(".hourly");
+    btnRefresh.disabled = false;
+    btnRefresh.textContent = "↻";
+  }
 
-          for (const h of days[date]) {
-            const time = new Date(h.validTime).toLocaleTimeString("sv-SE", {
-              hour: "2-digit",
-              minute: "2-digit"
-            });
-
-            const temp = param(h, "t", "—");
-            const symb = param(h, "Wsymb2", null);
-            const windSpeed = Number(param(h, "ws", NaN));
-            const windDeg = Number(param(h, "wd", 0));
-            const day = isDay(h.validTime);
-
-            const [emoji, cssClass] = icon(symb ?? 0, day).split(" ");
-            const desc = (symb && descriptions[symb]) ? descriptions[symb] : "Okänt väder";
-
-            const hourEl = document.createElement("div");
-            hourEl.className = "hour";
-            hourEl.innerHTML = `
-              <div class="time">${time}</div>
-              <div class="icon ${cssClass}">${emoji}</div>
-              <div class="temp">${temp}°C</div>
-              <div class="desc">${desc}</div>
-              <div class="wind">
-                🌬️ ${Number.isFinite(windSpeed) ? windSpeed : "—"} m/s ${windDirection(windDeg)}
-                <br />
-                <small>${windStrength(windSpeed)}</small>
-              </div>
-            `;
-
-            hourly.appendChild(hourEl);
-          }
-
-          container.appendChild(dayCard);
-        }
-      }
-
-      async function refresh() {
-        setLoading(true);
-        try {
-          setStatus({ message: "⏳ Uppdaterar…" });
-
-          const { data, fetchedAt, fromCache } = await fetchForecast();
-          render(data);
-
-          setStatus({
-            message: fromCache ? "✅ Klart (cache)." : "✅ Klart.",
-            fetchedAt
-          });
-        } catch (err) {
-          console.error(err);
-          setStatus({ message: `❌ Kunde inte hämta prognos. <small>${err?.message ? err.message : ""}</small>` });
-        } finally {
-          setLoading(false);
-        }
-      }
-
-      btnRefresh.addEventListener("click", refresh);
-      refresh();
-    </script>
-  </body>
+  btnRefresh.onclick = () => refresh(true);
+  refresh(false);
+</script>
+</body>
 </html>
