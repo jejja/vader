@@ -27,10 +27,7 @@
       text-align: center;
     }
 
-    h1 {
-      margin: 0;
-      color: var(--accent);
-    }
+    h1 { margin: 0; color: var(--accent); }
 
     .sub {
       opacity: 0.8;
@@ -41,36 +38,47 @@
     .topbar {
       max-width: 1100px;
       margin: 0 auto;
-      padding: 0 1rem 0.5rem;
+      padding: 0 1rem 0.6rem;
       display: flex;
       justify-content: center;
     }
 
     .icon-btn {
-      width: 44px;
-      height: 44px;
+      width: 52px;
+      height: 52px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       border: 1px solid rgba(255,255,255,.18);
       background: rgba(255,255,255,.06);
       color: var(--text);
-      border-radius: 14px;
+      border-radius: 16px;
       cursor: pointer;
-      font-size: 1.2rem;
       user-select: none;
+      transition: transform .08s ease, filter .15s ease;
+    }
+    .icon-btn:hover { filter: brightness(1.10); }
+    .icon-btn:active { transform: scale(0.98); }
+    .icon-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .icon-btn svg {
+      width: 26px;
+      height: 26px;
+      display: block;
     }
 
-    .icon-btn:hover { filter: brightness(1.08); }
-    .icon-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .icon-btn.loading svg {
+      animation: spin 0.9s linear infinite;
+    }
 
     .status {
       max-width: 1100px;
       margin: 0 auto;
       padding: 0 1rem 1rem;
       text-align: center;
-      opacity: 0.9;
-      font-size: 0.9rem;
+      opacity: 0.92;
+      font-size: 0.92rem;
+      line-height: 1.35;
     }
 
     .days {
@@ -122,10 +130,7 @@
       text-align: center;
     }
 
-    .time {
-      font-size: 0.8rem;
-      opacity: 0.7;
-    }
+    .time { font-size: 0.8rem; opacity: 0.7; }
 
     .icon {
       font-size: 1.6rem;
@@ -157,10 +162,9 @@
       opacity: 0.8;
       padding: 0 1rem 2rem;
     }
-
     footer a { color: inherit; }
 
-    /* ====== IKONER + ANIMATIONER ====== */
+    /* Ikon-animationer */
     .sun { animation: spin 8s linear infinite; }
     .moon { animation: pulse 3s ease-in-out infinite; }
     .cloud { animation: float 4s ease-in-out infinite; }
@@ -184,7 +188,13 @@
   </header>
 
   <div class="topbar">
-    <button id="btnRefresh" class="icon-btn" title="Uppdatera" aria-label="Uppdatera">↻</button>
+    <button id="btnRefresh" class="icon-btn" title="Uppdatera" aria-label="Uppdatera">
+      <!-- Reload SVG (större och skarpare än textsymbol) -->
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M20 12a8 8 0 1 1-2.34-5.66" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M20 4v6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
   </div>
 
   <div id="status" class="status" aria-live="polite"></div>
@@ -208,7 +218,7 @@
   const statusEl = document.getElementById("status");
   const btnRefresh = document.getElementById("btnRefresh");
 
-  // För dag-gruppering i Sverige-tid (fixar “gårdagen”-effekter runt midnatt)
+  // Gruppning per lokal dag i Sverige-tid (fixar “gårdagen” runt midnatt)
   const dayKeyFmt = new Intl.DateTimeFormat("sv-SE", {
     timeZone: "Europe/Stockholm",
     year: "numeric",
@@ -216,7 +226,7 @@
     day: "2-digit"
   });
 
-  // För dag/natt i Sverige-tid
+  // Dag/natt i Sverige-tid
   const hourFmt = new Intl.DateTimeFormat("sv-SE", {
     timeZone: "Europe/Stockholm",
     hour: "2-digit",
@@ -246,7 +256,6 @@
   };
 
   function iconForWsymb2(code, day) {
-    // Ingen "❓" längre – okänt blir neutral moln-ikon
     const fallback = { emoji: "☁️", cls: "cloud" };
     if (!Number.isFinite(code)) return fallback;
 
@@ -289,8 +298,9 @@
     return (p && Array.isArray(p.values) && p.values.length) ? p.values[0] : fallback;
   }
 
-  function fmtLastUpdated(ms) {
-    return new Intl.DateTimeFormat("sv-SE", { dateStyle:"medium", timeStyle:"short" }).format(new Date(ms));
+  function fmt(msOrIso) {
+    return new Intl.DateTimeFormat("sv-SE", { dateStyle:"medium", timeStyle:"short" })
+      .format(new Date(msOrIso));
   }
 
   function loadCache() {
@@ -315,13 +325,19 @@
   async function fetchForecast({ force = false } = {}) {
     if (!force) {
       const cached = loadCache();
-      if (cached) return { data: cached.data, ts: cached.ts };
+      if (cached) return { data: cached.data, fetchedAt: cached.ts };
     }
     const res = await fetch(URL, { headers: { "Accept": "application/json" } });
     if (!res.ok) throw new Error(`SMHI svarade ${res.status} ${res.statusText}`);
     const data = await res.json();
-    const ts = saveCache(data);
-    return { data, ts };
+    const fetchedAt = saveCache(data);
+    return { data, fetchedAt };
+  }
+
+  function getSmhiForecastTimestamp(data) {
+    // SMHI beskriver bl.a. "approvedTime" som när prognosen beräknades/godkändes.
+    // I vissa endpoints kan fält heta createdTime; därför fallbackar vi.
+    return data?.approvedTime || data?.createdTime || data?.referenceTime || null;
   }
 
   function render(data) {
@@ -339,7 +355,6 @@
       const card = document.createElement("div");
       card.className = "day-card";
 
-      // “T12:00” för stabilt datum i local parsing
       const title = new Date(key + "T12:00:00").toLocaleDateString("sv-SE", {
         weekday: "long",
         day: "numeric",
@@ -388,26 +403,35 @@
     }
   }
 
+  function setLoading(isLoading) {
+    btnRefresh.disabled = isLoading;
+    btnRefresh.classList.toggle("loading", isLoading);
+  }
+
   async function refresh(force = false) {
-    btnRefresh.disabled = true;
-    btnRefresh.textContent = "⟳";
+    setLoading(true);
     statusEl.textContent = "Uppdaterar…";
 
     try {
-      const { data, ts } = await fetchForecast({ force });
+      const { data, fetchedAt } = await fetchForecast({ force });
       render(data);
-      statusEl.textContent = `Senast uppdaterad: ${fmtLastUpdated(ts)}`;
+
+      const smhiTime = getSmhiForecastTimestamp(data);
+      const smhiLine = smhiTime ? `SMHI prognos skapad: ${fmt(smhiTime)}` : `SMHI prognos skapad: okänd`;
+      statusEl.innerHTML =
+        `Senast hämtad: <strong>${fmt(fetchedAt)}</strong><br>` +
+        `${smhiLine}`;
     } catch (e) {
       console.error(e);
       statusEl.textContent = "Kunde inte hämta prognos.";
     } finally {
-      btnRefresh.disabled = false;
-      btnRefresh.textContent = "↻";
+      setLoading(false);
     }
   }
 
-  // Knapp = alltid nät (färsk data), första laddning = cache ok
+  // Klick = alltid färsk data från SMHI
   btnRefresh.addEventListener("click", () => refresh(true));
+  // Första laddning: cache ok
   refresh(false);
 </script>
 </body>
