@@ -44,8 +44,8 @@
     }
 
     .icon-btn {
-      width: 52px;
-      height: 52px;
+      width: 54px;
+      height: 54px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -57,13 +57,13 @@
       user-select: none;
       transition: transform .08s ease, filter .15s ease;
     }
-    .icon-btn:hover { filter: brightness(1.10); }
+    .icon-btn:hover { filter: brightness(1.12); }
     .icon-btn:active { transform: scale(0.98); }
     .icon-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
     .icon-btn svg {
-      width: 26px;
-      height: 26px;
+      width: 30px;
+      height: 30px;
       display: block;
     }
 
@@ -154,6 +154,24 @@
       opacity: 0.9;
       margin-top: 0.3rem;
       line-height: 1.3;
+      display: grid;
+      gap: 4px;
+      justify-items: center;
+    }
+
+    .windline {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      opacity: 0.95;
+    }
+
+    .wind-arrow {
+      width: 18px;
+      height: 18px;
+      display: inline-block;
+      transform-origin: 50% 50%;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,.25));
     }
 
     footer {
@@ -164,7 +182,6 @@
     }
     footer a { color: inherit; }
 
-    /* Ikon-animationer */
     .sun { animation: spin 8s linear infinite; }
     .moon { animation: pulse 3s ease-in-out infinite; }
     .cloud { animation: float 4s ease-in-out infinite; }
@@ -189,10 +206,11 @@
 
   <div class="topbar">
     <button id="btnRefresh" class="icon-btn" title="Uppdatera" aria-label="Uppdatera">
-      <!-- Reload SVG (större och skarpare än textsymbol) -->
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M20 12a8 8 0 1 1-2.34-5.66" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <path d="M20 4v6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M3 12a9 9 0 0 1 15.3-6.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M18 3v5h-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M21 12a9 9 0 0 1-15.3 6.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M6 21v-5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </button>
   </div>
@@ -218,7 +236,6 @@
   const statusEl = document.getElementById("status");
   const btnRefresh = document.getElementById("btnRefresh");
 
-  // Gruppning per lokal dag i Sverige-tid (fixar “gårdagen” runt midnatt)
   const dayKeyFmt = new Intl.DateTimeFormat("sv-SE", {
     timeZone: "Europe/Stockholm",
     year: "numeric",
@@ -226,7 +243,6 @@
     day: "2-digit"
   });
 
-  // Dag/natt i Sverige-tid
   const hourFmt = new Intl.DateTimeFormat("sv-SE", {
     timeZone: "Europe/Stockholm",
     hour: "2-digit",
@@ -234,7 +250,7 @@
   });
 
   function localDateKey(iso) {
-    return dayKeyFmt.format(new Date(iso)); // "YYYY-MM-DD"
+    return dayKeyFmt.format(new Date(iso));
   }
 
   function isDayInStockholm(iso) {
@@ -299,8 +315,7 @@
   }
 
   function fmt(msOrIso) {
-    return new Intl.DateTimeFormat("sv-SE", { dateStyle:"medium", timeStyle:"short" })
-      .format(new Date(msOrIso));
+    return new Intl.DateTimeFormat("sv-SE", { dateStyle:"medium", timeStyle:"short" }).format(new Date(msOrIso));
   }
 
   function loadCache() {
@@ -310,7 +325,7 @@
       const obj = JSON.parse(raw);
       if (!obj?.ts || !obj?.data) return null;
       if (Date.now() - obj.ts > CACHE_TTL_MS) return null;
-      return obj; // { ts, data }
+      return obj;
     } catch {
       return null;
     }
@@ -335,9 +350,25 @@
   }
 
   function getSmhiForecastTimestamp(data) {
-    // SMHI beskriver bl.a. "approvedTime" som när prognosen beräknades/godkändes.
-    // I vissa endpoints kan fält heta createdTime; därför fallbackar vi.
     return data?.approvedTime || data?.createdTime || data?.referenceTime || null;
+  }
+
+  function feelsLikeC(tempC, windMs) {
+    if (!Number.isFinite(tempC) || !Number.isFinite(windMs)) return null;
+    const windKmh = windMs * 3.6;
+    if (tempC > 10 || windKmh < 4.8) return null;
+    const wci = 13.12 + 0.6215 * tempC - 11.37 * Math.pow(windKmh, 0.16) + 0.3965 * tempC * Math.pow(windKmh, 0.16);
+    return Math.round(wci * 10) / 10;
+  }
+
+  function windArrowSvg(deg) {
+    const rot = Number.isFinite(deg) ? deg : 0;
+    return `
+      <svg class="wind-arrow" viewBox="0 0 24 24" fill="none" style="transform: rotate(${rot}deg)" aria-hidden="true">
+        <path d="M12 3 L20 11 L16.8 11 L16.8 21 L7.2 21 L7.2 11 L4 11 Z"
+              fill="currentColor" opacity="0.9"/>
+      </svg>
+    `;
   }
 
   function render(data) {
@@ -374,26 +405,34 @@
       for (const h of days[key]) {
         const time = new Date(h.validTime).toLocaleTimeString("sv-SE", { hour:"2-digit", minute:"2-digit" });
 
-        const temp = param(h, "t", "—");
+        const temp = Number(param(h, "t", NaN));
         const symb = Number(param(h, "Wsymb2", NaN));
         const windSpeed = Number(param(h, "ws", NaN));
-        const windDeg = Number(param(h, "wd", 0));
+        const windDeg = Number(param(h, "wd", NaN));
+        const gust = Number(param(h, "gust", NaN));
 
         const day = isDayInStockholm(h.validTime);
         const { emoji, cls } = iconForWsymb2(symb, day);
         const desc = Number.isFinite(symb) ? (descriptions[symb] || "Väder") : "Väder";
+
+        const fl = feelsLikeC(temp, windSpeed);
+        const feels = fl === null ? "" : ` · känns som ${fl}°`;
+
+        const gustText = Number.isFinite(gust) ? ` · byar ${gust} m/s` : "";
 
         const hourEl = document.createElement("div");
         hourEl.className = "hour";
         hourEl.innerHTML = `
           <div class="time">${time}</div>
           <div class="icon ${cls}">${emoji}</div>
-          <div class="temp">${temp}°C</div>
-          <div class="desc">${desc}</div>
+          <div class="temp">${Number.isFinite(temp) ? temp : "—"}°C</div>
+          <div class="desc">${desc}${feels}</div>
           <div class="wind">
-            🌬️ ${Number.isFinite(windSpeed) ? windSpeed : "—"} m/s ${windDirection(windDeg)}
-            <br />
-            <small>${windStrength(windSpeed)}</small>
+            <div class="windline">
+              ${windArrowSvg(windDeg)}
+              <span>${Number.isFinite(windSpeed) ? windSpeed : "—"} m/s ${Number.isFinite(windDeg) ? windDirection(windDeg) : ""}</span>
+            </div>
+            <small>${windStrength(windSpeed)}${gustText}</small>
           </div>
         `;
         hourly.appendChild(hourEl);
@@ -417,21 +456,16 @@
       render(data);
 
       const smhiTime = getSmhiForecastTimestamp(data);
-      const smhiLine = smhiTime ? `SMHI prognos skapad: ${fmt(smhiTime)}` : `SMHI prognos skapad: okänd`;
-      statusEl.innerHTML =
-        `Senast hämtad: <strong>${fmt(fetchedAt)}</strong><br>` +
-        `${smhiLine}`;
+      const smhiLine = smhiTime ? `SMHI prognos: <strong>${fmt(smhiTime)}</strong>` : `SMHI prognos: <strong>okänd</strong>`;
+      statusEl.innerHTML = `Senast hämtad: <strong>${fmt(fetchedAt)}</strong><br>${smhiLine}`;
     } catch (e) {
-      console.error(e);
       statusEl.textContent = "Kunde inte hämta prognos.";
     } finally {
       setLoading(false);
     }
   }
 
-  // Klick = alltid färsk data från SMHI
   btnRefresh.addEventListener("click", () => refresh(true));
-  // Första laddning: cache ok
   refresh(false);
 </script>
 </body>
