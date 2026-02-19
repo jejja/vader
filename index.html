@@ -167,11 +167,11 @@
     }
 
     .wind-arrow {
-      width: 18px;
-      height: 18px;
+      width: 14px;
+      height: 14px;
       display: inline-block;
       transform-origin: 50% 50%;
-      filter: drop-shadow(0 6px 10px rgba(0,0,0,.25));
+      opacity: 0.9;
     }
 
     footer {
@@ -361,12 +361,14 @@
     return Math.round(wci * 10) / 10;
   }
 
-  function windArrowSvg(deg) {
-    const rot = Number.isFinite(deg) ? deg : 0;
+  function windArrowSvg(fromDeg) {
+    const d = Number.isFinite(fromDeg) ? fromDeg : 0;
+    const rot = d + 180;
     return `
-      <svg class="wind-arrow" viewBox="0 0 24 24" fill="none" style="transform: rotate(${rot}deg)" aria-hidden="true">
-        <path d="M12 3 L20 11 L16.8 11 L16.8 21 L7.2 21 L7.2 11 L4 11 Z"
-              fill="currentColor" opacity="0.9"/>
+      <svg class="wind-arrow" viewBox="0 0 24 24" fill="none"
+           style="transform: rotate(${rot}deg)" aria-hidden="true">
+        <path d="M12 20V6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M7.5 10.5L12 6l4.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     `;
   }
