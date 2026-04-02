@@ -225,8 +225,8 @@
 
 <script>
   const PLACE = "Karlskrona";
-  const LAT = 56.161;
-  const LON = 15.587;
+  const LAT = 56.161245;
+  const LON = 15.586938;
 
   const CACHE_TTL_MS = 15 * 60 * 1000;
   const CACHE_KEY = `smhi:pmp3g:v2:${LON}:${LAT}`;
@@ -250,7 +250,11 @@
   });
 
   function localDateKey(iso) {
-    return dayKeyFmt.format(new Date(iso));
+    const parts = dayKeyFmt.formatToParts(new Date(iso));
+    const y = parts.find(p => p.type === 'year').value;
+    const m = parts.find(p => p.type === 'month').value;
+    const d = parts.find(p => p.type === 'day').value;
+    return `${y}-${m}-${d}`;
   }
 
   function isDayInStockholm(iso) {
