@@ -35,35 +35,43 @@
       font-size: 0.95rem;
     }
 
-    .topbar {
+    .status-bar {
       max-width: 1100px;
       margin: 0 auto;
-      padding: 0 1rem 0.6rem;
+      padding: 0 1rem 0.5rem;
       display: flex;
-      justify-content: center;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .status-text {
+      opacity: 0.8;
+      font-size: 0.85rem;
+      line-height: 1.2;
     }
 
     .icon-btn {
-      width: 54px;
-      height: 54px;
+      width: 38px;
+      height: 38px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      border: 1px solid rgba(255,255,255,.18);
-      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
       color: var(--text);
-      border-radius: 16px;
+      border-radius: 10px;
       cursor: pointer;
       user-select: none;
-      transition: transform .08s ease, filter .15s ease;
+      transition: transform .08s ease, filter .15s ease, background .15s ease;
     }
-    .icon-btn:hover { filter: brightness(1.12); }
-    .icon-btn:active { transform: scale(0.98); }
-    .icon-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .icon-btn:hover { background: rgba(255,255,255,.1); }
+    .icon-btn:active { transform: scale(0.95); }
+    .icon-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .icon-btn svg {
-      width: 30px;
-      height: 30px;
+      width: 18px;
+      height: 18px;
       display: block;
     }
 
@@ -71,20 +79,10 @@
       animation: spin 0.9s linear infinite;
     }
 
-    .status {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 0 1rem 1rem;
-      text-align: center;
-      opacity: 0.92;
-      font-size: 0.92rem;
-      line-height: 1.35;
-    }
-
     .days {
       max-width: 1100px;
       margin: auto;
-      padding: 1rem;
+      padding: 0 1rem 1rem;
       display: flex;
       flex-direction: column;
       gap: 2rem;
@@ -178,7 +176,7 @@
       text-align: center;
       font-size: 0.8rem;
       opacity: 0.8;
-      padding: 0 1rem 2rem;
+      padding: 1rem 1rem 2rem;
     }
     footer a { color: inherit; }
 
@@ -204,7 +202,8 @@
     <div class="sub">Timprognos (5 dagar)</div>
   </header>
 
-  <div class="topbar">
+  <div class="status-bar">
+    <div id="status" class="status-text" aria-live="polite">Laddar prognos...</div>
     <button id="btnRefresh" class="icon-btn" title="Uppdatera" aria-label="Uppdatera">
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M3 12a9 9 0 0 1 15.3-6.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -215,7 +214,6 @@
     </button>
   </div>
 
-  <div id="status" class="status" aria-live="polite"></div>
   <div id="days" class="days"></div>
 
   <footer>
@@ -229,7 +227,6 @@
   const LON = 15.596644;
 
   const CACHE_TTL_MS = 15 * 60 * 1000;
-  
   const CACHE_KEY = `smhi:snow1g:v1:${LON}:${LAT}`;
   const URL = `https://opendata-download-metfcst.smhi.se/api/category/snow1g/version/1/geotype/point/lon/${LON}/lat/${LAT}/data.json`;
 
@@ -350,7 +347,7 @@
     if (!res.ok) throw new Error(`SMHI svarade ${res.status} ${res.statusText}`);
     const data = await res.json();
     const fetchedAt = saveCache(data);
-    return { data, fetchedAt };
+    return { data, fetchedAt }; // fetchedAt är kvar ifall du behöver den i framtiden, men loggas inte
   }
 
   function getSmhiForecastTimestamp(data) {
@@ -458,12 +455,11 @@
     statusEl.textContent = "Uppdaterar…";
 
     try {
-      const { data, fetchedAt } = await fetchForecast({ force });
+      const { data } = await fetchForecast({ force });
       render(data);
 
       const smhiTime = getSmhiForecastTimestamp(data);
-      const smhiLine = smhiTime ? `SMHI prognos: <strong>${fmt(smhiTime)}</strong>` : `SMHI prognos: <strong>okänd</strong>`;
-      statusEl.innerHTML = `Senast hämtad: <strong>${fmt(fetchedAt)}</strong><br>${smhiLine}`;
+      statusEl.innerHTML = smhiTime ? `SMHI prognos: <strong>${fmt(smhiTime)}</strong>` : `SMHI prognos: <strong>okänd</strong>`;
     } catch (e) {
       statusEl.textContent = "Kunde inte hämta prognos.";
       console.error(e);
