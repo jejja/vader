@@ -225,12 +225,14 @@
 
 <script>
   const PLACE = "Karlskrona";
-  const LAT = 56.161245;
-  const LON = 15.586938;
+  const LAT = 56.161; // Koordinaterna funkar fint i det nya API:et
+  const LON = 15.587;
 
   const CACHE_TTL_MS = 15 * 60 * 1000;
-  const CACHE_KEY = `smhi:pmp3g:v2:${LON}:${LAT}`;
-  const URL = `https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/${LON}/lat/${LAT}/data.json`;
+  
+  // Uppdaterad till snow1gv1
+  const CACHE_KEY = `smhi:snow1g:v1:${LON}:${LAT}`;
+  const URL = `https://opendata-download-metfcst.smhi.se/api/category/snow1g/version/1/geotype/point/lon/${LON}/lat/${LAT}/data.json`;
 
   const container = document.getElementById("days");
   const statusEl = document.getElementById("status");
@@ -313,9 +315,9 @@
     return "Storm";
   }
 
+  // Betydligt enklare parameter-funktion för det nya API:et
   function param(h, name, fallback=null) {
-    const p = h.parameters?.find(x => x.name === name);
-    return (p && Array.isArray(p.values) && p.values.length) ? p.values[0] : fallback;
+    return (h.data && h.data[name] !== undefined && h.data[name] !== null) ? h.data[name] : fallback;
   }
 
   function fmt(msOrIso) {
@@ -382,7 +384,8 @@
 
     const days = {};
     for (const h of (data.timeSeries || [])) {
-      const key = localDateKey(h.validTime);
+      // SMHI SNOW1gv1 använder 'time' istället för 'validTime'
+      const key = localDateKey(h.time);
       (days[key] ||= []).push(h);
     }
 
@@ -409,15 +412,16 @@
       const hourly = card.querySelector(".hourly");
 
       for (const h of days[key]) {
-        const time = new Date(h.validTime).toLocaleTimeString("sv-SE", { hour:"2-digit", minute:"2-digit" });
+        const time = new Date(h.time).toLocaleTimeString("sv-SE", { hour:"2-digit", minute:"2-digit" });
 
-        const temp = Number(param(h, "t", NaN));
-        const symb = Number(param(h, "Wsymb2", NaN));
-        const windSpeed = Number(param(h, "ws", NaN));
-        const windDeg = Number(param(h, "wd", NaN));
-        const gust = Number(param(h, "gust", NaN));
+        // Nya, mycket smidigare parameternamn i SNOW1gv1
+        const temp = Number(param(h, "air_temperature", NaN));
+        const symb = Number(param(h, "symbol_code", NaN));
+        const windSpeed = Number(param(h, "wind_speed", NaN));
+        const windDeg = Number(param(h, "wind_from_direction", NaN));
+        const gust = Number(param(h, "wind_speed_of_gust", NaN));
 
-        const day = isDayInStockholm(h.validTime);
+        const day = isDayInStockholm(h.time);
         const { emoji, cls } = iconForWsymb2(symb, day);
         const desc = Number.isFinite(symb) ? (descriptions[symb] || "Väder") : "Väder";
 
@@ -466,6 +470,7 @@
       statusEl.innerHTML = `Senast hämtad: <strong>${fmt(fetchedAt)}</strong><br>${smhiLine}`;
     } catch (e) {
       statusEl.textContent = "Kunde inte hämta prognos.";
+      console.error(e);
     } finally {
       setLoading(false);
     }
