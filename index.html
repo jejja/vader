@@ -200,7 +200,7 @@
 
 <body>
   <header>
-    <h1>🌦️ Väderprognos – Karlskrona</h1>
+    <h1>🌦️ Väderprognos – Stumholmen</h1>
     <div class="sub">Timprognos (5 dagar)</div>
   </header>
 
@@ -224,13 +224,12 @@
   </footer>
 
 <script>
-  const PLACE = "Karlskrona";
-  const LAT = 56.161; // Koordinaterna funkar fint i det nya API:et
-  const LON = 15.587;
+  const PLACE = "Stumholmen";
+  const LAT = 56.160169;
+  const LON = 15.596644;
 
   const CACHE_TTL_MS = 15 * 60 * 1000;
   
-  // Uppdaterad till snow1gv1
   const CACHE_KEY = `smhi:snow1g:v1:${LON}:${LAT}`;
   const URL = `https://opendata-download-metfcst.smhi.se/api/category/snow1g/version/1/geotype/point/lon/${LON}/lat/${LAT}/data.json`;
 
@@ -315,7 +314,6 @@
     return "Storm";
   }
 
-  // Betydligt enklare parameter-funktion för det nya API:et
   function param(h, name, fallback=null) {
     return (h.data && h.data[name] !== undefined && h.data[name] !== null) ? h.data[name] : fallback;
   }
@@ -384,7 +382,6 @@
 
     const days = {};
     for (const h of (data.timeSeries || [])) {
-      // SMHI SNOW1gv1 använder 'time' istället för 'validTime'
       const key = localDateKey(h.time);
       (days[key] ||= []).push(h);
     }
@@ -414,7 +411,6 @@
       for (const h of days[key]) {
         const time = new Date(h.time).toLocaleTimeString("sv-SE", { hour:"2-digit", minute:"2-digit" });
 
-        // Nya, mycket smidigare parameternamn i SNOW1gv1
         const temp = Number(param(h, "air_temperature", NaN));
         const symb = Number(param(h, "symbol_code", NaN));
         const windSpeed = Number(param(h, "wind_speed", NaN));
